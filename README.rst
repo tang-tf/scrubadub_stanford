@@ -13,14 +13,15 @@
 scrubadub_stanford
 ******************
 
-`scrubadub` removes personally identifiable information from text.
-`scrubadub_stanford` is an extension that uses Stanford's NER model to remove personal information from text.
+``scrubadub`` removes personally identifiable information from text.
+``scrubadub_stanford`` is an extension that uses Stanford's NER model to remove personal information from text.
 
 This package contains one extra detectors:
- * **StanfordEntityDetector** - A detector that uses the Stanford NER model to find locations, names and organizations.
+
+* ``scrubadub_stanford.detectors.StanfordEntityDetector`` - A detector that uses the Stanford NER model to find locations, names and organizations.
 
 For more information on how to use this package see the
-`scrubadub spacy documentation <https://scrubadub.readthedocs.io/en/develop/names.html#stanford>`_
+`scrubadub stanford documentation <https://scrubadub.readthedocs.io/en/develop/names.html#stanford>`_
 and the `scrubadub repository <https://github.com/LeapBeyond/scrubadub>`_.
 
 
