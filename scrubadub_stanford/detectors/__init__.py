@@ -1,0 +1,1 @@
+from .stanford import StanfordEntityDetector
