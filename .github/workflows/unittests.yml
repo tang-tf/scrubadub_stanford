@@ -51,7 +51,7 @@ jobs:
 
     - name: Download models and NLTK data
       run: |
-        echo "NLTK command missing"
+        python3 -c "import nltk; nltk.download('punkt')"
 
     - name: Install package
       run: |
