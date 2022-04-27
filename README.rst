@@ -16,11 +16,11 @@ scrubadub_stanford
 ``scrubadub`` removes personally identifiable information from text.
 ``scrubadub_stanford`` is an extension that uses Stanford's NER model to remove personal information from text.
 
-This package contains three flavours of the same detector:
+This package contains three flavours of interfacing with Stanford's NER models that can be used as a detector:
 
-* ``scrubadub_stanford.detectors.StanfordEntityDetector`` - A detector that uses the Stanford NER model to find locations, names and organizations.
-* ``scrubadub_stanford.detectors.CoreNlpEntityDetector`` - The same interface as the StanfordEntityDetector, but using Stanza's CoreNLPClient to interface with the CoreNLP Java Server. 
-* ``scrubadub_stanford.detectors.StanzaEntityDetector`` - The same interface as the StanfordEntityDetector, but using Stanza's native Python pipelines and models. 
+* ``scrubadub_stanford.detectors.StanfordEntityDetector`` - A detector that uses the Stanford NER model to find locations, names and organizations. Download size circa 250MB.
+* ``scrubadub_stanford.detectors.CoreNlpEntityDetector`` - The same interface as the StanfordEntityDetector, but using Stanza's CoreNLPClient to interface with the CoreNLP Java Server. Download size circa 510MB. 
+* ``scrubadub_stanford.detectors.StanzaEntityDetector`` - The same interface as the StanfordEntityDetector, but using Stanza's native Python pipelines and models. Download size circa 210MB. No Java required.
 
 *************
 Prerequisites
