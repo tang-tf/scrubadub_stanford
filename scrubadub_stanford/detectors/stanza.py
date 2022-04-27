@@ -4,8 +4,9 @@ however it uses Stanford's own Python-native Stanza for building pipelines and r
 
 See https://stanfordnlp.github.io/stanza/ner.html for more details.
 
-Stanza will download the default English language models upon first use. Default location for the 
-download of around 210MB is `~/stanza_resources`, otherwise specify in the environment variable `STANZA_RESOURCES_DIR`
+Stanza will download the default English language models upon first use. Default location of the download 
+is `~/stanza_resources` and it is around 210MB in size. If another location is desired, please specify the 
+path in the environment variable `STANZA_RESOURCES_DIR`.
 
 """
 import re
@@ -86,7 +87,7 @@ class StanzaEntityDetector(Detector):
         grouped_tags = {}  # type: Dict[str, List[str]]
         previous_tag = None
 
-        # List of tuples of text/NER type for each token of each annotated sentence:
+        # List of tuples of text/type for each entity in document
         tags = [(ent.text, ent.type) for ent in doc.ents]  
         # Loop over all tagged words and join contiguous words tagged as people
         for tag_text, tag_type in tags:

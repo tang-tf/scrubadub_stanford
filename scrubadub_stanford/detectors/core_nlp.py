@@ -1,11 +1,12 @@
 """
 This is a module that provides the same interface as StanfordEntityDetector, 
-however it uses Stanford's own Python-native Stanza API to interface with the actively 
-maintained CoreNLP Java Server instead of using NLTK's interface. 
+however it uses Stanford's own Stanza API to interface with the CoreNLP Java Server 
+instead of using NLTK's interface.
 
 See https://stanfordnlp.github.io/CoreNLP/ for more details.
-This detector requires Java 1.8+ and the Stanford CoreNLP installation is just over 500MB. 
-The default installation location is `~/stanza_corenlp`
+This detector requires Java Runtime Environment 8+ and the Stanford CoreNLP installation is about 510MB. 
+The default installation location is `~/stanza_corenlp`, but a different location can be specified using
+environment variable `CORENLP_HOME`.
 """
 import re
 import os
