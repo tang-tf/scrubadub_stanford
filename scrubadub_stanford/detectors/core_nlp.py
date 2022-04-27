@@ -1,17 +1,19 @@
 """
 This is a module that provides the same interface as StanfordEntityDetector, 
-however it uses Stanford's own Python-native Stanza for building pipelines and running annotations. 
+however it uses Stanford's own Python-native Stanza API to interface with the actively 
+maintained CoreNLP Java Server instead of using NLTK's interface. 
 
-See https://stanfordnlp.github.io/stanza/ner.html for more details.
-
-Stanza will download the default English language models upon first use. Default location for the 
-download of around 210MB is `~/stanza_resources`, otherwise specify in the environment variable `STANZA_RESOURCES_DIR`
-
+See https://stanfordnlp.github.io/CoreNLP/ for more details.
+This detector requires Java 1.8+ and the Stanford CoreNLP installation is just over 500MB. 
+The default installation location is `~/stanza_corenlp`
 """
 import re
+import os
+from pathlib import Path
 from typing import List, Dict, Type, Optional
 
-from stanza import Pipeline
+from stanza import install_corenlp
+from stanza.server import CoreNLPClient
 
 from scrubadub.detectors.catalogue import register_detector
 from scrubadub.detectors.base import Detector
@@ -20,8 +22,14 @@ from scrubadub.filth.name import NameFilth
 from scrubadub.filth.organization import OrganizationFilth
 from scrubadub.filth.location import LocationFilth
 
+# Default installation directory for CoreNLP download (500MB)
+HOME_DIR = str(Path.home())
+DEFAULT_CORENLP_DIR = os.getenv(
+    'CORENLP_HOME',
+    os.path.join(HOME_DIR, 'stanza_corenlp')
+)
 
-class StanzaEntityDetector(Detector):
+class CoreNlpEntityDetector(Detector):
     """Search for people's names, organization's names and locations within text using the stanford 3 class model.
 
     The three classes of this model can be enabled with the three arguments to the initialiser `enable_person`,
@@ -29,7 +37,7 @@ class StanzaEntityDetector(Detector):
     An example of their usage is given below.
 
     >>> import scrubadub, scrubadub_stanford
-    >>> detector = scrubadub_stanford.detectors.StanzaEntityDetector(
+    >>> detector = scrubadub_stanford.detectors.CoreNlpEntityDetector(
     ...     enable_person=False, enable_organization=False, enable_location=True
     ... )
     >>> scrubber = scrubadub.Scrubber(detector_list=[detector])
@@ -37,7 +45,7 @@ class StanzaEntityDetector(Detector):
     'Jane is visiting {{LOCATION}}.'
     """
     filth_cls = Filth
-    name = "stanford"
+    name = "stanford-corenlp"
 
     def __init__(self, enable_person: bool = True, enable_organization: bool = True, enable_location: bool = False, 
                  ignored_words: List[str] = None,
@@ -62,13 +70,35 @@ class StanzaEntityDetector(Detector):
         if enable_person:
             self.filth_lookup['PERSON'] = NameFilth
         if enable_organization:
-            self.filth_lookup['ORG'] = OrganizationFilth
+            self.filth_lookup['ORGANIZATION'] = OrganizationFilth
         if enable_location:
-            self.filth_lookup['LOC'] = LocationFilth
+            self.filth_lookup['LOCATION'] = LocationFilth
         self.ignored_words = ['tennant'] if ignored_words is None else ignored_words
-        self._downloaded = False
 
-        super(StanzaEntityDetector, self).__init__(**kwargs)
+        super(CoreNlpEntityDetector, self).__init__(**kwargs)
+
+    def _check_downloaded(self, dir: str = DEFAULT_CORENLP_DIR):
+        """Check for a downloaded Stanford CoreNLP.
+        
+        :param dir: The directory where CoreNLP will be unzipped and installed to, default is `stanza_nlp` in the
+                    home directory, else specified by the environment variable `CORENLP_HOME`.
+        :type dir: str
+        :return: `True` if the directory exists and is not empty. 
+        :rtype: bool
+        """
+        dir = os.path.expanduser(dir)
+        if os.path.exists(dir) and len(os.listdir(dir)) > 0:
+            return True
+        return False
+
+    def _download(self, dir: str = DEFAULT_CORENLP_DIR):
+        """Download and install CoreNLP to the specified directory. 
+        
+        :param dir: The directory where CoreNLP will be unzipped and installed to, default is `stanza_nlp` in the
+                    home directory, else specified by the environment variable `CORENLP_HOME`.
+        :type dir: str
+        """
+        install_corenlp(dir)
 
     def iter_filth(self, text, document_name: Optional[str] = None):
         """Yields discovered filth in the provided ``text``.
@@ -80,14 +110,18 @@ class StanzaEntityDetector(Detector):
         :return: An iterator to the discovered :class:`Filth`
         :rtype: Iterator[:class:`Filth`]
         """
-        nlp = Pipeline(processors=['tokenize', 'ner'])
-        doc = nlp(text)
+
+        if not self._check_downloaded():
+            self._download()
+
+        with CoreNLPClient(be_quiet=True) as client:
+            annotation = client.annotate(text)
 
         grouped_tags = {}  # type: Dict[str, List[str]]
         previous_tag = None
 
-        # List of tuples of text/NER type for each token of each annotated sentence:
-        tags = [(ent.text, ent.type) for ent in doc.ents]  
+        # List of tuples of token/NER tag for each token of each annotated sentence:
+        tags = [(token.value, token.ner) for sentence in annotation.sentence for token in sentence.token]
         # Loop over all tagged words and join contiguous words tagged as people
         for tag_text, tag_type in tags:
             if tag_type in self.filth_lookup.keys() and not any(
@@ -143,6 +177,6 @@ class StanzaEntityDetector(Detector):
         return language in ['en']
 
 
-register_detector(StanzaEntityDetector)
+register_detector(CoreNlpEntityDetector)
 
-__all__ = ["StanzaEntityDetector"]
+__all__ = ["CoreNlpEntityDetector"]

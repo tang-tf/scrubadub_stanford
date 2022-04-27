@@ -1,2 +1,3 @@
 from .stanford import StanfordEntityDetector
-from .stanza import StanfordEntityDetectorStanza
+from .core_nlp import CoreNlpEntityDetector
+from .stanza import StanzaEntityDetector
