@@ -1,10 +1,10 @@
 """
-This is a module that provides the same interface as StanfordEntityDetector, 
-however it uses Stanford's own Stanza API to interface with the CoreNLP Java Server 
+This is a module that provides the same interface as StanfordEntityDetector,
+however it uses Stanford's own Stanza API to interface with the CoreNLP Java Server
 instead of using NLTK's interface.
 
 See https://stanfordnlp.github.io/CoreNLP/ for more details.
-This detector requires Java Runtime Environment 8+ and the Stanford CoreNLP installation is about 510MB. 
+This detector requires Java Runtime Environment 8+ and the Stanford CoreNLP installation is about 510MB.
 The default installation location is `~/stanza_corenlp`, but a different location can be specified using
 environment variable `CORENLP_HOME`.
 """
@@ -30,6 +30,7 @@ DEFAULT_CORENLP_DIR = os.getenv(
     os.path.join(HOME_DIR, 'stanza_corenlp')
 )
 
+
 class CoreNlpEntityDetector(Detector):
     """Search for people's names, organization's names and locations within text using the stanford 3 class model.
 
@@ -48,7 +49,7 @@ class CoreNlpEntityDetector(Detector):
     filth_cls = Filth
     name = "stanford-corenlp"
 
-    def __init__(self, enable_person: bool = True, enable_organization: bool = True, enable_location: bool = False, 
+    def __init__(self, enable_person: bool = True, enable_organization: bool = True, enable_location: bool = False,
                  ignored_words: List[str] = None,
                  **kwargs):
         """Initialise the ``Detector``.
@@ -80,11 +81,11 @@ class CoreNlpEntityDetector(Detector):
 
     def _check_downloaded(self, dir: str = DEFAULT_CORENLP_DIR):
         """Check for a downloaded Stanford CoreNLP.
-        
+
         :param dir: The directory where CoreNLP will be unzipped and installed to, default is `stanza_nlp` in the
                     home directory, else specified by the environment variable `CORENLP_HOME`.
         :type dir: str
-        :return: `True` if the directory exists and is not empty. 
+        :return: `True` if the directory exists and is not empty.
         :rtype: bool
         """
         dir = os.path.expanduser(dir)
@@ -93,8 +94,8 @@ class CoreNlpEntityDetector(Detector):
         return False
 
     def _download(self, dir: str = DEFAULT_CORENLP_DIR):
-        """Download and install CoreNLP to the specified directory. 
-        
+        """Download and install CoreNLP to the specified directory.
+
         :param dir: The directory where CoreNLP will be unzipped and installed to, default is `stanza_nlp` in the
                     home directory, else specified by the environment variable `CORENLP_HOME`.
         :type dir: str

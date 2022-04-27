@@ -1,11 +1,11 @@
 """
-This is a module that provides the same interface as StanfordEntityDetector, 
-however it uses Stanford's own Python-native Stanza for building pipelines and running annotations. 
+This is a module that provides the same interface as StanfordEntityDetector,
+however it uses Stanford's own Python-native Stanza for building pipelines and running annotations.
 
 See https://stanfordnlp.github.io/stanza/ner.html for more details.
 
-Stanza will download the default English language models upon first use. Default location of the download 
-is `~/stanza_resources` and it is around 210MB in size. If another location is desired, please specify the 
+Stanza will download the default English language models upon first use. Default location of the download
+is `~/stanza_resources` and it is around 210MB in size. If another location is desired, please specify the
 path in the environment variable `STANZA_RESOURCES_DIR`.
 
 """
@@ -40,7 +40,7 @@ class StanzaEntityDetector(Detector):
     filth_cls = Filth
     name = "stanford"
 
-    def __init__(self, enable_person: bool = True, enable_organization: bool = True, enable_location: bool = False, 
+    def __init__(self, enable_person: bool = True, enable_organization: bool = True, enable_location: bool = False,
                  ignored_words: List[str] = None,
                  **kwargs):
         """Initialise the ``Detector``.
@@ -88,7 +88,7 @@ class StanzaEntityDetector(Detector):
         previous_tag = None
 
         # List of tuples of text/type for each entity in document
-        tags = [(ent.text, ent.type) for ent in doc.ents]  
+        tags = [(ent.text, ent.type) for ent in doc.ents]
         # Loop over all tagged words and join contiguous words tagged as people
         for tag_text, tag_type in tags:
             if tag_type in self.filth_lookup.keys() and not any(
