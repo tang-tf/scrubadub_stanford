@@ -38,16 +38,18 @@ class CoreNlpEntityDetector(Detector):
     `enable_organization` and `enable_location`.
     An example of their usage is given below.
 
-    >>> import scrubadub, scrubadub_stanford
-    >>> detector = scrubadub_stanford.detectors.CoreNlpEntityDetector(
-    ...     enable_person=False, enable_organization=False, enable_location=True
+    >>> from scrubadub import Scrubber
+    >>> from scrubadub_stanford.detectors import CoreNlpEntityDetector
+    >>>
+    >>> detector = CoreNlpEntityDetector(
+    ...     enable_person=True, enable_organization=True, enable_location=False
     ... )
-    >>> scrubber = scrubadub.Scrubber(detector_list=[detector])
-    >>> scrubber.clean('Jane is visiting London.')
-    'Jane is visiting {{LOCATION}}.'
+    >>> scrubber = Scrubber(detector_list=[detector])
+    >>> scrubber.clean('Jane has an appointment at the National Hospital of Neurology and Neurosurgery today.')
+    '{{NAME}} has an appointment at the {{ORGANIZATION}} and Neurosurgery today.'
     """
     filth_cls = Filth
-    name = "stanford-corenlp"
+    name = "corenlp"
 
     def __init__(self, enable_person: bool = True, enable_organization: bool = True, enable_location: bool = False,
                  ignored_words: List[str] = None,
@@ -79,7 +81,7 @@ class CoreNlpEntityDetector(Detector):
 
         super(CoreNlpEntityDetector, self).__init__(**kwargs)
 
-    def _check_downloaded(self, dir: str = DEFAULT_CORENLP_DIR):
+    def _check_downloaded(self, dir: str = DEFAULT_CORENLP_DIR) -> bool:
         """Check for a downloaded Stanford CoreNLP.
 
         :param dir: The directory where CoreNLP will be unzipped and installed to, default is `stanza_nlp` in the
@@ -93,7 +95,7 @@ class CoreNlpEntityDetector(Detector):
             return True
         return False
 
-    def _download(self, dir: str = DEFAULT_CORENLP_DIR):
+    def _download(self, dir: str = DEFAULT_CORENLP_DIR) -> None:
         """Download and install CoreNLP to the specified directory.
 
         :param dir: The directory where CoreNLP will be unzipped and installed to, default is `stanza_nlp` in the

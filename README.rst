@@ -19,23 +19,26 @@ scrubadub_stanford
 This package contains three flavours of interfacing with Stanford's NER models that can be used as a detector:
 
 * ``scrubadub_stanford.detectors.StanfordEntityDetector`` - A detector that uses the Stanford NER model to find locations, names and organizations. Download size circa 250MB.
-* ``scrubadub_stanford.detectors.CoreNlpEntityDetector`` - The same interface as the StanfordEntityDetector, but using Stanza's CoreNLPClient to interface with the CoreNLP Java Server. Download size circa 510MB. 
-* ``scrubadub_stanford.detectors.StanzaEntityDetector`` - The same interface as the StanfordEntityDetector, but using Stanza's native Python pipelines and models. Download size circa 210MB. No Java required.
+* ``scrubadub_stanford.detectors.CoreNlpEntityDetector`` - The same interface as the ``StanfordEntityDetector``, but using Stanza's ``CoreNLPClient`` to interface with the CoreNLP Java Server. Download size circa 510MB.
+* ``scrubadub_stanford.detectors.StanzaEntityDetector`` - Similar to the above but using Stanza's native Python pipelines. Download size circa 210MB. No Java required. This is the recommended detector for speed and footprint.
 
-*************
 Prerequisites
-*************
+-------------
 
-A minimum version of Java Runtime Environment 8 is required for `StanfordEntityDetector` and `CoreNlpEntityDetector`.
+A minimum version of Java Runtime Environment 8 is required for ``StanfordEntityDetector`` and ``CoreNlpEntityDetector``.
 Check which version by running::
 
     $ java -version
 
 It should be at least version 1.8, but if not, please run the following commands:
-**Linux**::
+
+Linux::
+
     $ sudo apt update
     $ sudo apt install openjdk-8-jre
-**MacOS**::
+
+MacOS::
+
     $ brew tap adoptopenjdk/openjdk
     $ brew install adoptopenjdk8-jre
 

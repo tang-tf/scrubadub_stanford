@@ -1,6 +1,6 @@
 from . import detectors
 
-__version__ = VERSION = "2.0.1"
+__version__ = VERSION = "2.1.0"
 __all__ = [
     'detectors',
 ]

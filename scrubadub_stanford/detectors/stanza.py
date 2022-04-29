@@ -1,6 +1,6 @@
 """
-This is a module that provides the same interface as StanfordEntityDetector,
-however it uses Stanford's own Python-native Stanza for building pipelines and running annotations.
+This is a module that is an alternative to StanfordEntityDetector and does not rely on Java as it uses
+Stanford's own Python-native Stanza for building pipelines and running annotations.
 
 See https://stanfordnlp.github.io/stanza/ner.html for more details.
 
@@ -9,8 +9,10 @@ is `~/stanza_resources` and it is around 210MB in size. If another location is d
 path in the environment variable `STANZA_RESOURCES_DIR`.
 
 """
+import os
+from pathlib import Path
 import re
-from typing import List, Dict, Type, Optional
+from typing import List, Dict, Type, Optional, Generator
 
 from stanza import Pipeline
 
@@ -21,6 +23,13 @@ from scrubadub.filth.name import NameFilth
 from scrubadub.filth.organization import OrganizationFilth
 from scrubadub.filth.location import LocationFilth
 
+# Default installation directory for Stanza download (210MB)
+HOME_DIR = str(Path.home())
+DEFAULT_STANZA_DIR = os.getenv(
+    'STANZA_RESOURCES_DIR',
+    os.path.join(HOME_DIR, 'stanza_resources')
+)
+
 
 class StanzaEntityDetector(Detector):
     """Search for people's names, organization's names and locations within text using the stanford 3 class model.
@@ -29,29 +38,31 @@ class StanzaEntityDetector(Detector):
     `enable_organization` and `enable_location`.
     An example of their usage is given below.
 
-    >>> import scrubadub, scrubadub_stanford
-    >>> detector = scrubadub_stanford.detectors.StanzaEntityDetector(
-    ...     enable_person=False, enable_organization=False, enable_location=True
+    >>> import scrubadub
+    >>> from scrubadub_stanford.detectors import StanzaEntityDetector
+    >>>
+    >>> detector = StanzaEntityDetector(
+    ...     enable_person=True, enable_organization=True, enable_location=False
     ... )
     >>> scrubber = scrubadub.Scrubber(detector_list=[detector])
-    >>> scrubber.clean('Jane is visiting London.')
-    'Jane is visiting {{LOCATION}}.'
+    >>> scrubber.clean('Jane has an appointment at the National Hospital of Neurology and Neurosurgery today.')
+    '{{NAME}} has an appointment at {{ORGANIZATION}} today.'
     """
     filth_cls = Filth
-    name = "stanford"
+    name = "stanza"
 
     def __init__(self, enable_person: bool = True, enable_organization: bool = True, enable_location: bool = False,
                  ignored_words: List[str] = None,
                  **kwargs):
         """Initialise the ``Detector``.
 
-        :param enable_person: To tag entities that are recognised as person, defaults to `True`.
+        :param enable_person: To tag entities that are recognised as person, defaults to ``True``.
         :type enable_person: bool
-        :param enable_organization: To tag entities that are recognised as organisations, defaults to `True`.
+        :param enable_organization: To tag entities that are recognised as organisations, defaults to ``True``.
         :type enable_organization: bool
-        :param enable_location: To tag entities that are recognised as locations, defaults to `False`.
+        :param enable_location: To tag entities that are recognised as locations, defaults to ``False``.
         :type enable_location: bool
-        :param ignored_words: A list of words that will be ignored by the NER tagging. Defaults to `['tennant']`.
+        :param ignored_words: A list of words that will be ignored by the NER tagging. Defaults to ``['tennant']``.
         :type ignored_words: List[str]
         :param name: Overrides the default name of the :class:``Detector``
         :type name: str, optional
@@ -71,18 +82,32 @@ class StanzaEntityDetector(Detector):
 
         super(StanzaEntityDetector, self).__init__(**kwargs)
 
-    def iter_filth(self, text, document_name: Optional[str] = None):
-        """Yields discovered filth in the provided ``text``.
+    def _check_downloaded(self, dir: str = DEFAULT_STANZA_DIR) -> bool:
+        """Check for a downloaded Stanza's resources.
 
+        :param dir: The directory where Stanza's models will have been downloaded to, default is `stanza_resources` in
+                    the home directory, else specified by the environment variable `STANZA_RESOURCES_DIR`.
+        :type dir: str
+        :return: `True` if the directory exists and is not empty.
+        :rtype: bool
+        """
+        dir = os.path.expanduser(dir)
+        if os.path.exists(dir) and 'en' in os.listdir(dir):
+            return True
+        return False
+
+    def iter_filth_helper(self, pipeline: Pipeline, text: str,
+                          document_name: Optional[str] = None) -> Generator[Filth, None, None]:
+        """Helper method that iterates through the provided ``text`` and yields respective filth.
+
+        :param pipeline: An instantiated Stanza Pipeline object.
+        :type pipeline: Pipeline
         :param text: The dirty text to clean.
         :type text: str
-        :param document_name: The name of the document to clean.
-        :type document_name: Optional[str]
         :return: An iterator to the discovered :class:`Filth`
         :rtype: Iterator[:class:`Filth`]
         """
-        nlp = Pipeline(processors=['tokenize', 'ner'])
-        doc = nlp(text)
+        doc = pipeline(text)
 
         grouped_tags = {}  # type: Dict[str, List[str]]
         previous_tag = None
@@ -129,6 +154,22 @@ class StanzaEntityDetector(Detector):
                         document_name=document_name,
                         locale=self.locale,
                     )
+
+    def iter_filth(self, text: str, document_name: Optional[str] = None):
+        """Yields discovered filth in the provided ``text``.
+
+        :param text: The dirty text to clean.
+        :type text: str
+        :param document_name: The name of the document to clean.
+        :type document_name: Optional[str]
+        :return: An iterator to the discovered :class:`Filth`
+        :rtype: Iterator[:class:`Filth`]
+        """
+        processors = ['tokenize', 'ner']
+        if not self._check_downloaded():
+            pipeline = Pipeline(processors=processors)
+        pipeline = Pipeline(processors=processors, download_method=None)
+        return self.iter_filth_helper(pipeline=pipeline, text=text, document_name=document_name)
 
     @classmethod
     def supported_locale(cls, locale: str) -> bool:
