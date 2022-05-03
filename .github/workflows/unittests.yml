@@ -4,12 +4,10 @@
 name: Python package
 
 on:
-  workflow_dispatch
-#on:
-#  push:
-#    branches: [ main ]
-#  pull_request:
-#    branches: [ main ]
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
@@ -70,4 +68,4 @@ jobs:
         COVERALLS_SERVICE_NAME: github-actions
         COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
       run: |
-        if python --version | grep -q "Python 3.9." ; then coveralls ; fi
+        if python --version | grep -q "Python 3.9." ; then coveralls -verbose ; fi
