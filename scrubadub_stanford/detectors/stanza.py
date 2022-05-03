@@ -5,14 +5,13 @@ Stanford's own Python-native Stanza for building pipelines and running annotatio
 See https://stanfordnlp.github.io/stanza/ner.html for more details.
 
 Stanza will download the default English language models upon first use. Default location of the download
-is `~/stanza_resources` and it is around 210MB in size. If another location is desired, please specify the
-path in the environment variable `STANZA_RESOURCES_DIR`.
+is ``~/stanza_resources`` and it is around 210MB in size. If another location is desired, please specify the
+path in the environment variable ``STANZA_RESOURCES_DIR``.
 
 """
 import os
 from pathlib import Path
-import re
-from typing import List, Dict, Type, Optional, Generator
+from typing import List, Dict, Type, Optional
 
 from stanza import Pipeline
 
@@ -22,6 +21,8 @@ from scrubadub.filth.base import Filth
 from scrubadub.filth.name import NameFilth
 from scrubadub.filth.organization import OrganizationFilth
 from scrubadub.filth.location import LocationFilth
+
+from .utils import tag_helper
 
 # Default installation directory for Stanza download (210MB)
 HOME_DIR = str(Path.home())
@@ -34,8 +35,8 @@ DEFAULT_STANZA_DIR = os.getenv(
 class StanzaEntityDetector(Detector):
     """Search for people's names, organization's names and locations within text using the stanford 3 class model.
 
-    The three classes of this model can be enabled with the three arguments to the initialiser `enable_person`,
-    `enable_organization` and `enable_location`.
+    The three classes of this model can be enabled with the three arguments to the initialiser ``enable_person``,
+    ``enable_organization`` and `enable_location`.
     An example of their usage is given below.
 
     >>> import scrubadub
@@ -82,78 +83,21 @@ class StanzaEntityDetector(Detector):
 
         super(StanzaEntityDetector, self).__init__(**kwargs)
 
-    def _check_downloaded(self, dir: str = DEFAULT_STANZA_DIR) -> bool:
+    @staticmethod
+    def _check_downloaded(directory: str = DEFAULT_STANZA_DIR) -> bool:
         """Check for a downloaded Stanza's resources.
 
-        :param dir: The directory where Stanza's models will have been downloaded to, default is `stanza_resources` in
-                    the home directory, else specified by the environment variable `STANZA_RESOURCES_DIR`.
-        :type dir: str
-        :return: `True` if the directory exists and is not empty.
+        :param directory: The directory where Stanza's models will have been downloaded to, default is
+                          ``stanza_resources`` in the home directory, else specified by the environment variable
+                          ``STANZA_RESOURCES_DIR``.
+        :type directory: str
+        :return: ``True`` if the directory exists and is not empty.
         :rtype: bool
         """
-        dir = os.path.expanduser(dir)
-        if os.path.exists(dir) and 'en' in os.listdir(dir):
+        directory = os.path.expanduser(directory)
+        if os.path.exists(directory) and 'en' in os.listdir(directory):
             return True
         return False
-
-    def iter_filth_helper(self, pipeline: Pipeline, text: str,
-                          document_name: Optional[str] = None) -> Generator[Filth, None, None]:
-        """Helper method that iterates through the provided ``text`` and yields respective filth.
-
-        :param pipeline: An instantiated Stanza Pipeline object.
-        :type pipeline: Pipeline
-        :param text: The dirty text to clean.
-        :type text: str
-        :return: An iterator to the discovered :class:`Filth`
-        :rtype: Iterator[:class:`Filth`]
-        """
-        doc = pipeline(text)
-
-        grouped_tags = {}  # type: Dict[str, List[str]]
-        previous_tag = None
-
-        # List of tuples of text/type for each entity in document
-        tags = [(ent.text, ent.type) for ent in doc.ents]
-        # Loop over all tagged words and join contiguous words tagged as people
-        for tag_text, tag_type in tags:
-            if tag_type in self.filth_lookup.keys() and not any(
-                    [tag_text.lower().strip() == ignored.lower().strip() for ignored in self.ignored_words]):
-                if previous_tag == tag_type:
-                    grouped_tags[tag_type][-1] = grouped_tags[tag_type][-1] + ' ' + tag_text
-                else:
-                    grouped_tags[tag_type] = grouped_tags.get(tag_type, []) + [tag_text]
-
-                previous_tag = tag_type
-            else:
-                previous_tag = None
-
-        # for each set of tags, de-dupe and convert to regex
-        for tag_type, tag_list in grouped_tags.items():
-            grouped_tags[tag_type] = [
-                r'\b' + re.escape(person).replace(r'\ ', r'\s+') + r'\b'
-                for person in set(tag_list)
-            ]
-
-        # Now look for these in the original document
-        for tag_type, tag_list in grouped_tags.items():
-            for tag_regex in tag_list:
-                try:
-                    pattern = re.compile(tag_regex, re.MULTILINE | re.UNICODE)
-                except re.error:
-                    print(tag_regex)
-                    raise
-                found_strings = re.finditer(pattern, text)
-
-                # Iterate over each found string matching this regex and yield some filth
-                for instance in found_strings:
-                    yield self.filth_lookup[tag_type](
-                        beg=instance.start(),
-                        end=instance.end(),
-                        text=instance.group(),
-                        detector_name=self.name,
-                        document_name=document_name,
-                        locale=self.locale,
-                    )
 
     def iter_filth(self, text: str, document_name: Optional[str] = None):
         """Yields discovered filth in the provided ``text``.
@@ -166,10 +110,14 @@ class StanzaEntityDetector(Detector):
         :rtype: Iterator[:class:`Filth`]
         """
         processors = ['tokenize', 'ner']
-        if not self._check_downloaded():
+        if not StanzaEntityDetector._check_downloaded():
             pipeline = Pipeline(processors=processors)
         pipeline = Pipeline(processors=processors, download_method=None)
-        return self.iter_filth_helper(pipeline=pipeline, text=text, document_name=document_name)
+        doc = pipeline(text)
+        # List of tuples of text/type for each entity in document
+        tags = [(ent.text, ent.type) for ent in doc.ents]
+        return tag_helper(text=text, tags=tags, filth_lookup=self.filth_lookup, ignored_words=self.ignored_words,
+                          name=self.name, locale=self.locale, document_name=document_name)
 
     @classmethod
     def supported_locale(cls, locale: str) -> bool:

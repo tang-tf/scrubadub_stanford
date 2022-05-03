@@ -6,7 +6,6 @@ See https://nlp.stanford.edu/software/CRF-NER.html for more details on the Stanf
 This detector requires java and the python package `nltk`.
 The Stanford CRF NER Tagger will be downloaded to `~/.scrubadub/stanford_ner` and takes around 250MB.
 """
-import re
 import os
 import pathlib
 import zipfile
@@ -19,7 +18,7 @@ except ImportError:
         'Please run: pip install scrubadub[stanford]'
     )
 
-from typing import Dict, Type, Optional, List
+from typing import Dict, Type, Optional
 
 from scrubadub.detectors.catalogue import register_detector
 from scrubadub.detectors.base import Detector
@@ -27,6 +26,8 @@ from scrubadub.filth.base import Filth
 from scrubadub.filth.name import NameFilth
 from scrubadub.filth.organization import OrganizationFilth
 from scrubadub.filth.location import LocationFilth
+
+from .utils import tag_helper
 
 
 class ScrubadubStanfordNERTagger(nltk.tag.StanfordNERTagger):
@@ -53,8 +54,8 @@ class ScrubadubStanfordNERTagger(nltk.tag.StanfordNERTagger):
 class StanfordEntityDetector(Detector):
     """Search for people's names, organization's names and locations within text using the stanford 3 class model.
 
-    The three classes of this model can be enabled with the three arguments to the inialiser `enable_person`,
-    `enable_organization` and `enable_location`.
+    The three classes of this model can be enabled with the three arguments to the initialiser ``enable_person``,
+    ``enable_organization`` and ``enable_location``.
     An example of their usage is given below.
 
     >>> import scrubadub, scrubadub_stanford
@@ -125,7 +126,7 @@ class StanfordEntityDetector(Detector):
         return True
 
     def _download(self):
-        """Download and extract the eneeded files from the Stanford NER tagger"""
+        """Download and extract the needed files from the Stanford NER tagger"""
         # Make the data directory
         pathlib.Path(self.stanford_prefix).mkdir(parents=True, exist_ok=True)
 
@@ -173,50 +174,8 @@ class StanfordEntityDetector(Detector):
 
         tokens = nltk.tokenize.word_tokenize(text)
         tags = self.stanford_tagger.tag(tokens)
-
-        grouped_tags = {}  # type: Dict[str, List[str]]
-        previous_tag = None
-
-        # Loop over all tagged words and join contiguous words tagged as people
-        for tag_text, tag_type in tags:
-            if tag_type in self.filth_lookup.keys() and not any(
-                    [tag_text.lower().strip() == ignored.lower().strip() for ignored in self.ignored_words]):
-                if previous_tag == tag_type:
-                    grouped_tags[tag_type][-1] = grouped_tags[tag_type][-1] + ' ' + tag_text
-                else:
-                    grouped_tags[tag_type] = grouped_tags.get(tag_type, []) + [tag_text]
-
-                previous_tag = tag_type
-            else:
-                previous_tag = None
-
-        # for each set of tags, de-dupe and convert to regex
-        for tag_type, tag_list in grouped_tags.items():
-            grouped_tags[tag_type] = [
-                r'\b' + re.escape(person).replace(r'\ ', r'\s+') + r'\b'
-                for person in set(tag_list)
-            ]
-
-        # Now look for these in the original document
-        for tag_type, tag_list in grouped_tags.items():
-            for tag_regex in tag_list:
-                try:
-                    pattern = re.compile(tag_regex, re.MULTILINE | re.UNICODE)
-                except re.error:
-                    print(tag_regex)
-                    raise
-                found_strings = re.finditer(pattern, text)
-
-                # Iterate over each found string matching this regex and yield some filth
-                for instance in found_strings:
-                    yield self.filth_lookup[tag_type](
-                        beg=instance.start(),
-                        end=instance.end(),
-                        text=instance.group(),
-                        detector_name=self.name,
-                        document_name=document_name,
-                        locale=self.locale,
-                    )
+        return tag_helper(text=text, tags=tags, filth_lookup=self.filth_lookup, ignored_words=self.ignored_words,
+                          name=self.name, locale=self.locale, document_name=document_name)
 
     @classmethod
     def supported_locale(cls, locale: str) -> bool:
