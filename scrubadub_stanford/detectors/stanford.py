@@ -3,8 +3,8 @@ This module provides a detector to detect people's names using the Stanford CRF 
 
 See https://nlp.stanford.edu/software/CRF-NER.html for more details on the Stanford CRF NER Tagger
 
-This detector requires java and the python package `nltk`.
-The Stanford CRF NER Tagger will be downloaded to `~/.scrubadub/stanford_ner` and takes around 250MB.
+This detector requires Java 8 Runtime Environment and above, and the Python package ``NLTK``.
+The Stanford CRF NER Tagger will be downloaded to ``~/.scrubadub/stanford_ner`` and takes around 250MB.
 """
 import os
 import pathlib
