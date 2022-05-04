@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, 3.8, 3.7, 3.6]
+        python-version: [3.9, 3.8, 3.7]
 
     steps:
     - uses: actions/checkout@v2
@@ -26,7 +26,7 @@ jobs:
 
     - name: Install apt dependencies
       run: |
-        sudo apt-get update && sudo apt-get install -y default-jre
+        sudo apt-get update && sudo apt-get install -y openjdk-8-jre
 
     - name: Cache restore pip
       id: cache-pip
@@ -51,7 +51,7 @@ jobs:
 
     - name: Download models and NLTK data
       run: |
-        python3 -c "import nltk; nltk.download('punkt')"
+        python -c "import nltk; nltk.download('punkt')"
 
     - name: Install package
       run: |
@@ -60,12 +60,10 @@ jobs:
 
     - name: Run tests
       run: |
-        python3 tests/run.py
+        python tests/run.py
 
     - name: Coveralls
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        COVERALLS_SERVICE_NAME: github-actions
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
       run: |
-        if python3 --version | grep -q "Python 3.9." ; then coveralls ; fi
+        if python --version | grep -q "Python 3.9." ; then coveralls --service=github ; fi
