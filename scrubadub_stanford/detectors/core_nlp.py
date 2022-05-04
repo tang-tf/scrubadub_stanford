@@ -118,8 +118,8 @@ class CoreNlpEntityDetector(Detector):
         :rtype: Iterator[:class:`Filth`]
         """
 
-        if not CoreNlpEntityDetector._check_downloaded():
-            CoreNlpEntityDetector._download()
+        if not self._check_downloaded():
+            self._download()
 
         with CoreNLPClient(be_quiet=True) as client:
             annotation = client.annotate(text)

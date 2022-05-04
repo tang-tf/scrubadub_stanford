@@ -110,7 +110,7 @@ class StanzaEntityDetector(Detector):
         :rtype: Iterator[:class:`Filth`]
         """
         processors = ['tokenize', 'ner']
-        if not StanzaEntityDetector._check_downloaded():
+        if not self._check_downloaded():
             pipeline = Pipeline(processors=processors)
         pipeline = Pipeline(processors=processors, download_method=None)
         doc = pipeline(text)
